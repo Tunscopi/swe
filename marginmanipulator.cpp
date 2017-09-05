@@ -68,7 +68,7 @@ int main()
                         newWord = appendNSpaces(newWord, 2);
                     } else {
                         wordsToWrite = appendNSpaces(wordsToWrite, 1);
-                        newWord = appendNSpaces(wordsToWrite, 1);
+                        newWord = appendNSpaces(newWord, 1);
                     }
                     writeToOutfile(newWord, false);   
                 }
