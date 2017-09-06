@@ -6,6 +6,8 @@
 //
 //  Requirements:
 //      i.  This word processing program allocates words to lines in order to satisfy the margin requirements
+//      ii. Displayed listing of edited text & produce output file on directory path
+//      iii. Include as many words as can fit between the margins
 //  
 //  Notes:
 //  Using a 12pt. font:
@@ -13,6 +15,7 @@
 //
 //  Assumptions:
 //       i) 1 inch = 5 characters (Round figure selected against 12 for ease of computation)
+//       ii) left and right margin are ALWAYS specified on first line in input file
 //       ii) The leftmargin + rightmargin value (converted to characters) is no greater than the max. number of characters per line
 //           i.e leftmargin + rightmargin <= [80 - (leftmargin + rightmargin)*5]
 //
@@ -25,13 +28,13 @@
 #include <cstdlib> 
 
 void writeToOutfile(std::string, bool);
-std::string appendNSpaces(std::string, int);
+std::string appendNSpaces(std::string, bool);
 
 // 1-time configurable vars
 const int kMaxlineChar = 80, kInchToChar = 5;
-const bool consoleOutputListing = false;
+const bool consoleOutputListing = true;
 
-bool isfirstline = true, nlflag = false;
+bool isfirstline = true, CRflag = false;
 uint leftmargin = 0, rightmargin = 0;
 std::ofstream writeToTxt("DAT1.txt");
 
@@ -39,7 +42,6 @@ enum ascii{
     lineFeed = 10,
     newLine = 13,
     space = 32,
-    parensClose = 41,
     fullStop = 46
 };
 
@@ -59,9 +61,8 @@ int main(int argc, char* argv[])
     
     // 1. init vars
     char val;
-    std::string wordsToWrite = "", newWord = "";
+    std::string wordsOnLine = "", newWord = "";
     bool wordDetected = false, isSentenceComplete = false;
-    std::ofstream writeToTxt2("stuff.txt");
     
     // 2. parse input file
     reader >> leftmargin >> rightmargin;
@@ -70,45 +71,41 @@ int main(int argc, char* argv[])
     while (!reader.eof())
     {
         reader >> std::noskipws >> val;
-        writeToTxt2 << val << " " << static_cast<int>(val) << "\n";
 
         if (static_cast<int>(val) == newLine)  
         {
-            if (!nlflag && newWord != "")  // helps identify if immediate last wasn't new line + if space(wordDetect) has already inserted the corr. spaces
+            if (!CRflag && newWord != "")  // helps identify if immediate last wasn't new line + if space(wordDetect) has already inserted the corr. spaces
             {
-                wordsToWrite = appendNSpaces(wordsToWrite,2);
-                newWord = appendNSpaces(newWord,2);
+                wordsOnLine = appendNSpaces(wordsOnLine,true);
+                newWord = appendNSpaces(newWord,true);
             }
         
             noLineCharLeft = kMaxlineChar - (leftmargin+rightmargin)*kInchToChar;
             wordDetected = false;
             isSentenceComplete = false;
-            nlflag = true;            
+            CRflag = true;            
         }
         else if (static_cast<int>(val) == space)  
         {
             if (wordDetected) 
             {
-                if (wordsToWrite.length() < noLineCharLeft)
-                {                  
-                    if (isSentenceComplete)
-                    {
-                        wordsToWrite = appendNSpaces(wordsToWrite,2);
-                        newWord = appendNSpaces(newWord,2);
-                    } else {
-                        wordsToWrite = appendNSpaces(wordsToWrite,1);
-                        newWord = appendNSpaces(newWord,1);
-                    }
+                if (wordsOnLine.length() < noLineCharLeft)
+                {      
+                    // append
+                    wordsOnLine = appendNSpaces(wordsOnLine, isSentenceComplete);
+                    newWord = appendNSpaces(newWord, isSentenceComplete);
+                    
                     writeToOutfile(newWord, false);   
                 }
-                else if (wordsToWrite.length() == noLineCharLeft)
+                else if (wordsOnLine.length() == noLineCharLeft)
                 {
                     writeToOutfile(newWord, false);  
                 }
-                else  // write to new line
+                else  
                 {
-                    isSentenceComplete ? newWord = appendNSpaces(newWord,2) : newWord = appendNSpaces(newWord,1);
-                    wordsToWrite = newWord;                    
+                    // write to new line
+                    newWord = appendNSpaces(newWord, isSentenceComplete);
+                    wordsOnLine = newWord;                    
                     writeToOutfile(newWord, true);      
                 }
                 newWord = "";
@@ -118,20 +115,16 @@ int main(int argc, char* argv[])
         }
         else if (static_cast<int>(val) == lineFeed)
         {
-            // we have no work to do except we don't include it in output listing or outfile 
+            // we have no work to do except we don't include it in our output listing or outfile 
         }
         else 
         {        
             wordDetected = true;
-            wordsToWrite += val;
+            wordsOnLine += val;
             newWord += val;
-            nlflag = false;                                    
-
-            isSentenceComplete = false;            
-            if (static_cast<int>(val) == fullStop) 
-            {
-                isSentenceComplete = true;
-            }
+            CRflag = false;                                    
+            
+            static_cast<int>(val) == fullStop ? isSentenceComplete = true : isSentenceComplete = false;
         }
     }
 
@@ -173,8 +166,10 @@ void writeToOutfile(std::string word, bool isNewLine)
     isfirstline = false;    
 }
 
-std::string appendNSpaces(std::string word, int numSpaces)
+std::string appendNSpaces(std::string word, bool doubleSpace)
 {
+    uint numSpaces;
+    doubleSpace ? numSpaces = 2 : numSpaces = 1;
     for (uint i=0; i<numSpaces; i++)
         word += " ";
     return word;
