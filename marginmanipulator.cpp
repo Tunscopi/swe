@@ -17,7 +17,7 @@
 //       i) 1 inch = 5 characters (Round figure selected against 12 for ease of computation)
 //       ii) left and right margin are ALWAYS specified on first line in input file
 //       ii) The leftmargin + rightmargin value (converted to characters) is no greater than the max. number of characters per line
-//           i.e leftmargin + rightmargin <= [80 - (leftmargin + rightmargin)*5]
+//           i.e no. of characters on a line <= [80 - (leftmargin + rightmargin)*5]
 //
 //  By Ayotunde Odejayi
 //*************************************************************************************************************************************
